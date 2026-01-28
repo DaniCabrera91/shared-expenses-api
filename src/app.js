@@ -1,10 +1,9 @@
 const express = require("express");
 const authRoutes = require("./auth/auth.routes");
+
 const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
-
-// Middleware
 app.use(express.json());
 
 // Routes

@@ -8,6 +8,16 @@ const registerUser = async ({
   email,
   password,
 }) => {
+  // Verificar si email ya existe
+  const existingUser = await pool.query(
+    "SELECT id FROM users WHERE email = $1",
+    [email],
+  );
+
+  if (existingUser.rows.length > 0) {
+    throw new Error("Este email ya está registrado");
+  }
+
   const passwordHash = await hashPassword(password);
 
   const query = `
