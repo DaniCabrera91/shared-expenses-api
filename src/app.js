@@ -1,9 +1,21 @@
 const express = require("express");
+const authRoutes = require("./auth/auth.routes");
+const errorHandler = require("./middlewares/error.middleware");
+
 const app = express();
 
+// Middleware
 app.use(express.json());
 
-// routes
-app.use("/auth", require("./auth/auth.routes"));
+// Routes
+app.use("/api/auth", authRoutes);
+
+// Health check
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+// Error handler (DEBE ser último)
+app.use(errorHandler);
 
 module.exports = app;
