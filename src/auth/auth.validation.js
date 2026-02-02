@@ -18,7 +18,7 @@ const registerSchema = z.object({
     .refine((val) => /[A-Z]/.test(val), "Debe incluir mayúscula")
     .refine((val) => /[a-z]/.test(val), "Debe incluir minúscula")
     .refine((val) => /[0-9]/.test(val), "Debe incluir número"),
-  alias: z.string().trim().min(2, "Alias muy corto").max(50),
+  alias: z.string().trim().min(2, "Alias muy corto").max(50).optional(),
 });
 
 module.exports = { registerSchema };
