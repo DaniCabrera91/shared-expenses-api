@@ -1,5 +1,7 @@
 const pool = require("../config/db");
 const { hashPassword } = require("../utils/hash");
+const bcrypt = require("bcrypt");
+
 
 const registerUser = async ({
   first_name,
@@ -32,4 +34,31 @@ const registerUser = async ({
   return rows[0];
 };
 
-module.exports = { registerUser };
+const loginUser = async ({ email, password }) => {
+  const result = await pool.query(
+    "SELECT id, email, password_hash FROM users WHERE email = $1",
+    [email],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Credenciales inválidas");
+  }
+
+  const user = result.rows[0];
+
+  const isValidPassword = await bcrypt.compare(
+    password,
+    user.password_hash,
+  );
+
+  if (!isValidPassword) {
+    throw new Error("Credenciales inválidas");
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+  };
+};
+
+module.exports = { registerUser, loginUser };

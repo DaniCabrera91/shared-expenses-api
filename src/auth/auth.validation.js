@@ -21,4 +21,11 @@ const registerSchema = z.object({
   alias: z.string().trim().min(2, "Alias muy corto").max(50).optional(),
 });
 
-module.exports = { registerSchema };
+const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Email no válido"),
+  password: z.string().min(1, "La contraseña es obligatoria"),
+});
+
+
+
+module.exports = { registerSchema, loginSchema };

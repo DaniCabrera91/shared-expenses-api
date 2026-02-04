@@ -1,5 +1,7 @@
-const { registerSchema } = require("./auth.validation");
-const { registerUser } = require("./auth.service");
+const { registerSchema, loginSchema } = require("./auth.validation");
+const { registerUser, loginUser } = require("./auth.service");
+const jwt = require("jsonwebtoken");
+
 
 const register = async (req, res, next) => {
   try {
@@ -18,4 +20,23 @@ const register = async (req, res, next) => {
   }
 };
 
-module.exports = { register };
+const login = async (req, res, next) => {
+  try {
+    const data = loginSchema.parse(req.body);
+    const user = await loginUser(data);
+
+    const token = jwt.sign(
+      { sub: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+
+    res.json({
+      token,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login };
