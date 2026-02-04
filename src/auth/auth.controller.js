@@ -26,10 +26,13 @@ const login = async (req, res, next) => {
     const user = await loginUser(data);
 
     const token = jwt.sign(
-      { sub: user.id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-    );
+  { email: user.email },
+  process.env.JWT_SECRET,
+  {
+    subject: user.id,
+    expiresIn: "1h",
+  }
+);
 
     res.json({
       token,
