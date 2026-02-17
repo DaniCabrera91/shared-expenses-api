@@ -13,4 +13,30 @@ const currentUser = async (userId) => {
   return result.rows[0];
 };
 
-module.exports = { currentUser };
+const updateUser = async (userId, data) => {
+  const fields = Object.keys(data);
+  const values = Object.values(data);
+
+  // Construir parte SET dinámicamente
+  const setClause = fields
+    .map((field, index) => `${field} = $${index + 1}`)
+    .join(", ");
+
+  const query = `
+    UPDATE users
+    SET ${setClause}
+    WHERE id = $${fields.length + 1} //Equivale a "WHERE id = $" + (fields.length + 1)
+
+    RETURNING id, first_name, last_name, alias, email
+  `;
+
+  const result = await pool.query(query, [...values, userId]);
+
+  if (result.rowCount === 0) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  return result.rows[0];
+};
+
+module.exports = { currentUser, updateUser };
