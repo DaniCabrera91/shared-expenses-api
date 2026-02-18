@@ -3,8 +3,6 @@ const {
   updateUser: updateUserService,
 } = require("./users.service");
 
-const { updateUserSchema } = require("./users.validation");
-
 const currentUser = async (req, res, next) => {
   try {
     const user = await getCurrentUser(req.user.id);
@@ -19,9 +17,7 @@ const currentUser = async (req, res, next) => {
 
 const updateUser = async (req, res, next) => {
   try {
-    const validatedData = updateUserSchema.parse(req.body);
-
-    const updatedUser = await updateUserService(req.user.id, validatedData);
+    const updatedUser = await updateUserService(req.user.id, req.validatedData);
 
     res.json({
       message: "Usuario actualizado correctamente",

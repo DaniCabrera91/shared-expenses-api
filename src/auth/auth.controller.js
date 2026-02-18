@@ -1,12 +1,9 @@
-const { registerSchema, loginSchema } = require("./auth.validation");
 const { registerUser, loginUser } = require("./auth.service");
 const jwt = require("jsonwebtoken");
 
-
 const register = async (req, res, next) => {
   try {
-    const data = registerSchema.parse(req.body);
-    const user = await registerUser(data);
+    const user = await registerUser(req.validatedData);
     res.status(201).json({
       message: "Usuario registrado exitosamente",
       user: {
@@ -22,17 +19,12 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const data = loginSchema.parse(req.body);
-    const user = await loginUser(data);
+    const user = await loginUser(req.validatedData);
 
-    const token = jwt.sign(
-  { email: user.email },
-  process.env.JWT_SECRET,
-  {
-    subject: user.id,
-    expiresIn: "1h",
-  }
-);
+    const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+      subject: user.id,
+      expiresIn: "1h",
+    });
 
     res.json({
       token,
