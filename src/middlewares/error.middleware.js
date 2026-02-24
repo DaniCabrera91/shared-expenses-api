@@ -1,7 +1,7 @@
 const { ZodError } = require("zod");
 
 const errorHandler = (err, req, res, next) => {
-  // 1. Errores de validación (Zod)
+  // 1️⃣ Errores de validación (Zod)
   if (err instanceof ZodError) {
     return res.status(400).json({
       error: "Error de validación",
@@ -12,8 +12,31 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // 2. Errores de negocio conocidos
-  if (err.message?.includes("email ya está registrado")) {
+  // 2️⃣ Errores de PostgreSQL
+  if (err.code) {
+    switch (err.code) {
+      case "23505": // unique_violation
+        return res.status(409).json({
+          error: "El recurso ya existe",
+          detail: err.detail,
+        });
+
+      case "23503": // foreign_key_violation
+        return res.status(400).json({
+          error: "Referencia inválida (foreign key)",
+          detail: err.detail,
+        });
+
+      case "23514": // check_violation
+        return res.status(400).json({
+          error: "Violación de restricción",
+          detail: err.detail,
+        });
+    }
+  }
+
+  // 3️⃣ Errores de lógica de negocio
+  if (err.message?.includes("El email ya está registrado")) {
     return res.status(409).json({
       error: err.message,
     });
@@ -25,7 +48,13 @@ const errorHandler = (err, req, res, next) => {
     });
   }
 
-  // 3. Errores inesperados
+  if (err.message === "No hay datos para actualizar") {
+    return res.status(400).json({
+      error: err.message,
+    });
+  }
+
+  // 4️⃣ Errores inesperados
   console.error("[ERROR STACK]:", err.stack || err);
 
   return res.status(500).json({

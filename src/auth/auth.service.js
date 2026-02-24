@@ -2,7 +2,6 @@ const pool = require("../config/db");
 const { hashPassword } = require("../utils/hash");
 const bcrypt = require("bcrypt");
 
-
 const registerUser = async ({
   first_name,
   last_name,
@@ -10,16 +9,6 @@ const registerUser = async ({
   email,
   password,
 }) => {
-  // Verificar si email ya existe
-  const existingUser = await pool.query(
-    "SELECT id FROM users WHERE email = $1",
-    [email],
-  );
-
-  if (existingUser.rows.length > 0) {
-    throw new Error("Este email ya está registrado");
-  }
-
   const passwordHash = await hashPassword(password);
 
   const query = `
@@ -46,10 +35,7 @@ const loginUser = async ({ email, password }) => {
 
   const user = result.rows[0];
 
-  const isValidPassword = await bcrypt.compare(
-    password,
-    user.password_hash,
-  );
+  const isValidPassword = await bcrypt.compare(password, user.password_hash);
 
   if (!isValidPassword) {
     throw new Error("Credenciales inválidas");
