@@ -9,13 +9,13 @@ const authenticate = (req, res, next) => {
     });
   }
 
-  const [type, token] = authHeader.split(" ");
-
-  if (type !== "Bearer" || !token) {
+  if (!authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
       error: "Formato de token inválido",
     });
   }
+
+  const token = authHeader.split(" ")[1];
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
