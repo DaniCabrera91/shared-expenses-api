@@ -13,6 +13,9 @@ const {
   create,
   addMembersController,
   updateRoleController,
+  listMembersController,
+  leaveGroupController,
+  removeMemberController,
 } = require("./groups.controller");
 
 const router = express.Router();
@@ -33,6 +36,22 @@ router.patch(
   requireGroupAdmin,
   validate(updateRoleSchema),
   updateRoleController,
+);
+
+router.get(
+  "/:groupId/members",
+  authenticate,
+  requireGroupAdmin,
+  listMembersController,
+);
+
+router.delete("/:groupId/leave", authenticate, leaveGroupController);
+
+router.delete(
+  "/:groupId/members/:userId",
+  authenticate,
+  requireGroupAdmin,
+  removeMemberController,
 );
 
 module.exports = router;
