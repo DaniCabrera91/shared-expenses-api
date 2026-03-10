@@ -9,8 +9,8 @@ const router = express.Router();
 router.get("/me", authenticate, usersController.currentUser);
 router.patch(
   "/me",
-  validate(updateUserSchema),
   authenticate,
+  validate(updateUserSchema),
   usersController.updateUser,
 );
 

@@ -1,7 +1,14 @@
 const { ZodError } = require("zod");
 
 const errorHandler = (err, req, res, next) => {
-  // 1️⃣ Errores de validación (Zod)
+  // 1️⃣ Errores personalizados con status
+  if (err.status) {
+    return res.status(err.status).json({
+      error: err.message,
+    });
+  }
+
+  // 2️⃣ Errores de validación (Zod)
   if (err instanceof ZodError) {
     return res.status(400).json({
       error: "Error de validación",

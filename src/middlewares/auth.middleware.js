@@ -1,14 +1,15 @@
 const jwt = require("jsonwebtoken");
+const HttpError = require("../utils/httpError");
 
 const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return next(new Error("Token requerido"));
+    return next(new HttpError(401, "Token requerido"));
   }
 
   if (!authHeader.startsWith("Bearer ")) {
-    return next(new Error("Formato de token inválido"));
+    return next(new HttpError(401, "Formato de token inválido"));
   }
 
   const token = authHeader.split(" ")[1];
@@ -23,7 +24,7 @@ const authenticate = (req, res, next) => {
 
     next();
   } catch (error) {
-    return next(new Error("Token inválido o expirado"));
+    return next(new HttpError(401, "Token inválido o expirado"));
   }
 };
 
