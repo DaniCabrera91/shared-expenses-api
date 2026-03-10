@@ -1,57 +1,48 @@
 const express = require("express");
-const authenticate = require("../middlewares/auth.middleware");
-const validate = require("../middlewares/validate.middleware");
-const requireGroupAdmin = require("../middlewares/groupAdmin.middleware");
+const router = express.Router();
+
+const controller = require("./groups.controller");
+const validate = require("../../middlewares/validate");
+const authenticate = require("../../middlewares/authenticate");
+const requireGroupAdmin = require("../../middlewares/requireGroupAdmin");
+const requireGroupMember = require("../../middlewares/requireGroupMember");
 
 const {
   createGroupSchema,
-  addMembersSchema,
+  addParticipantsSchema,
   updateRoleSchema,
 } = require("./groups.validation");
 
-const {
-  create,
-  addMembersController,
-  updateRoleController,
-  listMembersController,
-  leaveGroupController,
-  removeMemberController,
-} = require("./groups.controller");
+router.use(authenticate);
 
-const router = express.Router();
+router.post("/", validate(createGroupSchema), controller.createGroup);
 
-router.post("/", authenticate, validate(createGroupSchema), create);
+router.get("/", controller.listGroups);
+
+router.patch("/:groupId/archive", requireGroupAdmin, controller.archiveGroup);
 
 router.post(
   "/:groupId/members",
-  authenticate,
   requireGroupAdmin,
-  validate(addMembersSchema),
-  addMembersController,
+  validate(addParticipantsSchema),
+  controller.addParticipants,
 );
+
+router.get("/:groupId/members", requireGroupMember, controller.listMembers);
 
 router.patch(
   "/:groupId/members/:userId/role",
-  authenticate,
   requireGroupAdmin,
   validate(updateRoleSchema),
-  updateRoleController,
+  controller.updateMemberRole,
 );
-
-router.get(
-  "/:groupId/members",
-  authenticate,
-  requireGroupAdmin,
-  listMembersController,
-);
-
-router.delete("/:groupId/leave", authenticate, leaveGroupController);
 
 router.delete(
   "/:groupId/members/:userId",
-  authenticate,
   requireGroupAdmin,
-  removeMemberController,
+  controller.removeMember,
 );
+
+router.delete("/:groupId/leave", requireGroupMember, controller.leaveGroup);
 
 module.exports = router;

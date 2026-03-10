@@ -1,7 +1,7 @@
-const pool = require("../config/db");
+const pool = require("../../config/db");
+const { ensureNotLastAdmin } = require("../utils/lastAdmin");
 
-const createGroup = async (data, creatorId) => {
-  const { name, emoji, currency, participants = [] } = data;
+const createGroup = async ({ name, emoji, currency }, userId) => {
   const client = await pool.connect();
 
   try {
@@ -10,44 +10,24 @@ const createGroup = async (data, creatorId) => {
     const groupResult = await client.query(
       `
       INSERT INTO groups (name, emoji, currency, created_by)
-      VALUES ($1, $2, COALESCE($3, 'EUR'), $4)
-      RETURNING id, name, emoji, currency, created_at
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
       `,
-      [name, emoji || null, currency || null, creatorId],
+      [name, emoji, currency || "EUR", userId],
     );
 
     const group = groupResult.rows[0];
 
-    // Insert creator as admin
     await client.query(
       `
-      INSERT INTO group_members (group_id, user_id, display_name, role)
-      SELECT $1, u.id, COALESCE(u.alias, u.first_name), 'admin'
-      FROM users u
-      WHERE u.id = $2
+      INSERT INTO group_members (group_id, user_id, role)
+      VALUES ($1, $2, 'admin')
       `,
-      [group.id, creatorId],
+      [group.id, userId],
     );
 
-    const uniqueIds = [
-      ...new Set(
-        participants.map((p) => p.user_id).filter((id) => id !== creatorId),
-      ),
-    ];
-
-    if (uniqueIds.length > 0) {
-      await client.query(
-        `
-        INSERT INTO group_members (group_id, user_id, display_name, role)
-        SELECT $1, u.id, COALESCE(u.alias, u.first_name), 'member'
-        FROM users u
-        WHERE u.id = ANY($2::uuid[])
-        `,
-        [group.id, uniqueIds],
-      );
-    }
-
     await client.query("COMMIT");
+
     return group;
   } catch (error) {
     await client.query("ROLLBACK");
@@ -57,62 +37,71 @@ const createGroup = async (data, creatorId) => {
   }
 };
 
-const addMembers = async (groupId, participants) => {
-  const ids = [...new Set(participants.map((p) => p.user_id))];
-
-  if (ids.length === 0) return;
-
-  await pool.query(
-    `
-    INSERT INTO group_members (group_id, user_id, display_name, role)
-    SELECT $1, u.id, COALESCE(u.alias, u.first_name), 'member'
-    FROM users u
-    WHERE u.id = ANY($2::uuid[])
-    ON CONFLICT (group_id, user_id) DO NOTHING
-    `,
-    [groupId, ids],
-  );
-};
-
-const updateMemberRole = async (groupId, targetUserId, newRole) => {
-  if (newRole === "member") {
-    const adminCount = await pool.query(
-      `
-      SELECT COUNT(*) FROM group_members
-      WHERE group_id = $1 AND role = 'admin'
-      `,
-      [groupId],
-    );
-
-    if (Number(adminCount.rows[0].count) <= 1) {
-      throw new Error("No puedes quitar el último admin");
-    }
-  }
-
+const listUserGroups = async (userId) => {
   const result = await pool.query(
     `
-    UPDATE group_members
-    SET role = $1
-    WHERE group_id = $2 AND user_id = $3
-    RETURNING *
+    SELECT g.id, g.name, g.emoji, g.currency, g.created_at
+    FROM groups g
+    JOIN group_members gm ON gm.group_id = g.id
+    WHERE gm.user_id = $1
+    AND g.is_archived = FALSE
+    ORDER BY g.created_at DESC
     `,
-    [newRole, groupId, targetUserId],
+    [userId],
   );
 
-  if (result.rowCount === 0) {
-    throw new Error("Miembro no encontrado");
-  }
+  return result.rows;
+};
+
+const archiveGroup = async (groupId) => {
+  const result = await pool.query(
+    `
+    UPDATE groups
+    SET is_archived = TRUE
+    WHERE id = $1
+    RETURNING *
+    `,
+    [groupId],
+  );
 
   return result.rows[0];
 };
 
-const getGroupMembers = async (groupId) => {
+const addParticipants = async (groupId, participants) => {
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    for (const participant of participants) {
+      await client.query(
+        `
+        INSERT INTO group_members (group_id, user_id)
+        VALUES ($1, $2)
+        ON CONFLICT (group_id, user_id) DO NOTHING
+        `,
+        [groupId, participant.user_id],
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return { success: true };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const listMembers = async (groupId) => {
   const result = await pool.query(
     `
-    SELECT user_id, display_name, role, joined_at
-    FROM group_members
-    WHERE group_id = $1
-    ORDER BY joined_at ASC
+    SELECT u.id, u.first_name, u.last_name, u.email, gm.role
+    FROM group_members gm
+    JOIN users u ON u.id = gm.user_id
+    WHERE gm.group_id = $1
     `,
     [groupId],
   );
@@ -120,83 +109,59 @@ const getGroupMembers = async (groupId) => {
   return result.rows;
 };
 
-const leaveGroup = async (groupId, userId) => {
-  const member = await pool.query(
-    `
-    SELECT role FROM group_members
-    WHERE group_id = $1 AND user_id = $2
-    `,
-    [groupId, userId],
-  );
-
-  if (member.rowCount === 0) {
-    throw new Error("No perteneces a este grupo");
+const updateMemberRole = async (groupId, userId, role) => {
+  if (role !== "admin") {
+    await ensureNotLastAdmin(groupId);
   }
 
-  if (member.rows[0].role === "admin") {
-    const adminCount = await pool.query(
-      `
-      SELECT COUNT(*) FROM group_members
-      WHERE group_id = $1 AND role = 'admin'
-      `,
-      [groupId],
-    );
-
-    if (Number(adminCount.rows[0].count) <= 1) {
-      throw new Error("No puedes abandonar el grupo siendo el único admin");
-    }
-  }
-
-  await pool.query(
+  const result = await pool.query(
     `
-    DELETE FROM group_members
+    UPDATE group_members
+    SET role = $3
     WHERE group_id = $1 AND user_id = $2
+    RETURNING *
     `,
-    [groupId, userId],
+    [groupId, userId, role],
   );
+
+  return result.rows[0];
 };
 
-const removeMember = async (groupId, targetUserId) => {
-  const member = await pool.query(
-    `
-    SELECT role FROM group_members
-    WHERE group_id = $1 AND user_id = $2
-    `,
-    [groupId, targetUserId],
-  );
-
-  if (member.rowCount === 0) {
-    throw new Error("Miembro no encontrado");
-  }
-
-  if (member.rows[0].role === "admin") {
-    const adminCount = await pool.query(
-      `
-      SELECT COUNT(*) FROM group_members
-      WHERE group_id = $1 AND role = 'admin'
-      `,
-      [groupId],
-    );
-
-    if (Number(adminCount.rows[0].count) <= 1) {
-      throw new Error("No puedes eliminar al último admin");
-    }
-  }
+const removeMember = async (groupId, userId) => {
+  await ensureNotLastAdmin(groupId);
 
   await pool.query(
     `
     DELETE FROM group_members
     WHERE group_id = $1 AND user_id = $2
     `,
-    [groupId, targetUserId],
+    [groupId, userId],
   );
+
+  return { success: true };
+};
+
+const leaveGroup = async (groupId, userId) => {
+  await ensureNotLastAdmin(groupId);
+
+  await pool.query(
+    `
+    DELETE FROM group_members
+    WHERE group_id = $1 AND user_id = $2
+    `,
+    [groupId, userId],
+  );
+
+  return { success: true };
 };
 
 module.exports = {
   createGroup,
-  addMembers,
+  listUserGroups,
+  archiveGroup,
+  addParticipants,
+  listMembers,
   updateMemberRole,
-  getGroupMembers,
-  leaveGroup,
   removeMember,
+  leaveGroup,
 };

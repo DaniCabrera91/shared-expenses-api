@@ -1,103 +1,105 @@
-const {
-  createGroup,
-  addMembers,
-  updateMemberRole,
-  getGroupMembers,
-  leaveGroup,
-  removeMember,
-} = require("./groups.service");
+const groupsService = require("./groups.service");
 
-const create = async (req, res, next) => {
+const createGroup = async (req, res, next) => {
   try {
-    const group = await createGroup(req.validatedData, req.user.id);
+    const group = await groupsService.createGroup(
+      req.validatedData,
+      req.user.id,
+    );
 
-    res.status(201).json({
-      message: "Grupo creado correctamente",
-      group,
-    });
+    res.status(201).json(group);
   } catch (error) {
     next(error);
   }
 };
 
-const addMembersController = async (req, res, next) => {
+const listGroups = async (req, res, next) => {
   try {
-    const { groupId } = req.params;
-
-    await addMembers(groupId, req.validatedData.participants);
-
-    res.status(200).json({
-      message: "Miembros añadidos correctamente",
-    });
+    const groups = await groupsService.listUserGroups(req.user.id);
+    res.json(groups);
   } catch (error) {
     next(error);
   }
 };
 
-const updateRoleController = async (req, res, next) => {
+const archiveGroup = async (req, res, next) => {
   try {
-    const { groupId, userId } = req.params;
+    const group = await groupsService.archiveGroup(req.params.groupId);
+    res.json(group);
+  } catch (error) {
+    next(error);
+  }
+};
 
-    const member = await updateMemberRole(
-      groupId,
-      userId,
+const addParticipants = async (req, res, next) => {
+  try {
+    const result = await groupsService.addParticipants(
+      req.params.groupId,
+      req.validatedData.participants,
+    );
+
+    res.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const listMembers = async (req, res, next) => {
+  try {
+    const members = await groupsService.listMembers(req.params.groupId);
+    res.json(members);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const updateMemberRole = async (req, res, next) => {
+  try {
+    const member = await groupsService.updateMemberRole(
+      req.params.groupId,
+      req.params.userId,
       req.validatedData.role,
     );
 
-    res.status(200).json({
-      message: "Rol actualizado correctamente",
-      member,
-    });
+    res.json(member);
   } catch (error) {
     next(error);
   }
 };
 
-const listMembersController = async (req, res, next) => {
+const removeMember = async (req, res, next) => {
   try {
-    const { groupId } = req.params;
+    const result = await groupsService.removeMember(
+      req.params.groupId,
+      req.params.userId,
+    );
 
-    const members = await getGroupMembers(groupId);
-
-    res.status(200).json({ members });
+    res.json(result);
   } catch (error) {
     next(error);
   }
 };
 
-const leaveGroupController = async (req, res, next) => {
+const leaveGroup = async (req, res, next) => {
   try {
-    const { groupId } = req.params;
+    const result = await groupsService.leaveGroup(
+      req.params.groupId,
+      req.user.id,
+    );
 
-    await leaveGroup(groupId, req.user.id);
-
-    res.status(200).json({
-      message: "Has abandonado el grupo",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-const removeMemberController = async (req, res, next) => {
-  try {
-    const { groupId, userId } = req.params;
-
-    await removeMember(groupId, userId);
-
-    res.status(200).json({
-      message: "Miembro eliminado correctamente",
-    });
+    res.json(result);
   } catch (error) {
     next(error);
   }
 };
 
 module.exports = {
-  create,
-  addMembersController,
-  updateRoleController,
-  listMembersController,
-  leaveGroupController,
-  removeMemberController,
+  createGroup,
+  listGroups,
+  archiveGroup,
+  addParticipants,
+  listMembers,
+  updateMemberRole,
+  removeMember,
+  leaveGroup,
 };
