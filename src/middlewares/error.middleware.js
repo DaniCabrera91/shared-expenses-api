@@ -32,6 +32,12 @@ const errorHandler = (err, req, res, next) => {
           error: "Violación de restricción",
           detail: err.detail,
         });
+
+      case "23502": // not_null_violation
+        return res.status(400).json({
+          error: "Campo requerido faltante",
+          detail: err.detail,
+        });
     }
   }
 

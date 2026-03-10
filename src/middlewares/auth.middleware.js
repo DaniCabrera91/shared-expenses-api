@@ -4,15 +4,11 @@ const authenticate = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader) {
-    return res.status(401).json({
-      error: "Token requerido",
-    });
+    return next(new Error("Token requerido"));
   }
 
   if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      error: "Formato de token inválido",
-    });
+    return next(new Error("Formato de token inválido"));
   }
 
   const token = authHeader.split(" ")[1];
@@ -27,9 +23,7 @@ const authenticate = (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(401).json({
-      error: "Token inválido o expirado",
-    });
+    return next(new Error("Token inválido o expirado"));
   }
 };
 
