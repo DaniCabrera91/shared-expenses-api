@@ -53,6 +53,19 @@ const listUserGroups = async (userId) => {
   return result.rows;
 };
 
+const getGroup = async (groupId) => {
+  const result = await pool.query(
+    `
+    SELECT id, name, emoji, currency, created_at
+    FROM groups
+    WHERE id = $1 AND is_archived = FALSE
+    `,
+    [groupId],
+  );
+
+  return result.rows[0];
+};
+
 const archiveGroup = async (groupId) => {
   const result = await pool.query(
     `
@@ -111,7 +124,7 @@ const listMembers = async (groupId) => {
 
 const updateMemberRole = async (groupId, userId, role) => {
   if (role !== "admin") {
-    await ensureNotLastAdmin(groupId);
+    await ensureNotLastAdmin(groupId, userId);
   }
 
   const result = await pool.query(
@@ -128,7 +141,7 @@ const updateMemberRole = async (groupId, userId, role) => {
 };
 
 const removeMember = async (groupId, userId) => {
-  await ensureNotLastAdmin(groupId);
+  await ensureNotLastAdmin(groupId, userId);
 
   await pool.query(
     `
@@ -142,7 +155,7 @@ const removeMember = async (groupId, userId) => {
 };
 
 const leaveGroup = async (groupId, userId) => {
-  await ensureNotLastAdmin(groupId);
+  await ensureNotLastAdmin(groupId, userId);
 
   await pool.query(
     `
@@ -158,6 +171,7 @@ const leaveGroup = async (groupId, userId) => {
 module.exports = {
   createGroup,
   listUserGroups,
+  getGroup,
   archiveGroup,
   addParticipants,
   listMembers,

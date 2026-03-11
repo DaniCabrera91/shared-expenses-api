@@ -22,6 +22,16 @@ const listGroups = async (req, res, next) => {
   }
 };
 
+const getGroup = async (req, res, next) => {
+  try {
+    const group = await groupsService.getGroup(req.params.groupId);
+
+    res.json(group);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const archiveGroup = async (req, res, next) => {
   try {
     const group = await groupsService.archiveGroup(req.params.groupId);
@@ -96,6 +106,7 @@ const leaveGroup = async (req, res, next) => {
 module.exports = {
   createGroup,
   listGroups,
+  getGroup,
   archiveGroup,
   addParticipants,
   listMembers,

@@ -19,6 +19,8 @@ router.post("/", validate(createGroupSchema), controller.createGroup);
 
 router.get("/", controller.listGroups);
 
+router.get("/:groupId", requireGroupMember, controller.getGroup);
+
 router.patch("/:groupId/archive", requireGroupAdmin, controller.archiveGroup);
 
 router.post(
