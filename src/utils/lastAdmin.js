@@ -1,4 +1,4 @@
-const pool = require("../../config/db");
+const pool = require("../config/db");
 
 const ensureNotLastAdmin = async (groupId, userId) => {
   // Verificar si el usuario es admin

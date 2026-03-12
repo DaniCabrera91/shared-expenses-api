@@ -2,10 +2,10 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("./groups.controller");
-const validate = require("../../middlewares/validate");
-const authenticate = require("../../middlewares/authenticate");
-const requireGroupAdmin = require("../../middlewares/requireGroupAdmin");
-const requireGroupMember = require("../../middlewares/requireGroupMember");
+const validate = require("../middlewares/validate.middleware");
+const authenticate = require("../middlewares/auth.middleware");
+const requireGroupAdmin = require("../middlewares/requireGroupAdmin.middleware");
+const requireGroupMember = require("../middlewares/requireGroupMember.middleware");
 
 const {
   createGroupSchema,

@@ -1,4 +1,4 @@
-const pool = require("../../config/db");
+const pool = require("../config/db");
 const { ensureNotLastAdmin } = require("../utils/lastAdmin");
 
 const createGroup = async ({ name, emoji, currency }, userId) => {
