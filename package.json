@@ -6,15 +6,21 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "jest --detectOpenHandles",
-    "test:watch": "jest --watch"
+    "test": "NODE_ENV=test jest --detectOpenHandles",
+    "test:watch": "NODE_ENV=test jest --watch"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/DaniCabrera91/shared-expenses-api.git"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/test"
+    ],
+    "testMatch": [
+      "**/*.test.js"
+    ]
   },
   "keywords": [],
   "author": "",

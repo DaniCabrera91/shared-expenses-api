@@ -21,7 +21,6 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Error handler (DEBE ser último)
 app.use(errorHandler);
 
 module.exports = app;
