@@ -1,4 +1,10 @@
-const { registerUser, loginUser } = require("./auth.service");
+const {
+  registerUser,
+  loginUser,
+  createRefreshToken,
+  refreshAccessToken,
+  revokeRefreshToken,
+} = require("./auth.service");
 const jwt = require("jsonwebtoken");
 
 const register = async (req, res, next) => {
@@ -26,12 +32,38 @@ const login = async (req, res, next) => {
       expiresIn: "1h",
     });
 
+    const refreshToken = await createRefreshToken(user.id);
+
     res.json({
       token,
+      refresh_token: refreshToken,
     });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { register, login };
+const refresh = async (req, res, next) => {
+  try {
+    const { refresh_token } = req.validatedData;
+    const { token, refreshToken } = await refreshAccessToken(refresh_token);
+
+    res.json({
+      token,
+      refresh_token: refreshToken,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const logout = async (req, res, next) => {
+  try {
+    await revokeRefreshToken(req.validatedData.refresh_token);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, refresh, logout };

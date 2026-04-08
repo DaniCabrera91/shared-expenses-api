@@ -12,8 +12,8 @@ ON CONFLICT (email) DO UPDATE SET
 
 -- Groups
 INSERT INTO groups (name, emoji, currency, created_by)
-SELECT 'Vacaciones', '🏖️', 'EUR', id FROM users WHERE email = 'dani@example.com'
-ON CONFLICT (name, created_by) DO UPDATE SET emoji = EXCLUDED.emoji, currency = EXCLUDED.currency;
+SELECT 'Vacaciones', '🏖️', 'EUR', id FROM users WHERE email = 'dani@example.com';
+
 
 -- Group members
 INSERT INTO group_members (group_id, user_id, role)
@@ -32,20 +32,12 @@ ON CONFLICT (group_id, user_id) DO UPDATE SET role = EXCLUDED.role;
 INSERT INTO expenses (group_id, paid_by, created_by, description, total_amount, currency)
 SELECT g.id, u.id, u.id, 'Alquiler apartamento', 600.00, 'EUR'
 FROM groups g, users u
-WHERE g.name = 'Vacaciones' AND u.email = 'dani@example.com'
-ON CONFLICT (group_id, description, created_by) DO UPDATE SET
-  paid_by = EXCLUDED.paid_by,
-  total_amount = EXCLUDED.total_amount,
-  currency = EXCLUDED.currency;
+WHERE g.name = 'Vacaciones' AND u.email = 'dani@example.com';
 
 INSERT INTO expenses (group_id, paid_by, created_by, description, total_amount, currency)
 SELECT g.id, u.id, u.id, 'Supermercado', 150.00, 'EUR'
 FROM groups g, users u
-WHERE g.name = 'Vacaciones' AND u.email = 'borja@example.com'
-ON CONFLICT (group_id, description, created_by) DO UPDATE SET
-  paid_by = EXCLUDED.paid_by,
-  total_amount = EXCLUDED.total_amount,
-  currency = EXCLUDED.currency;
+WHERE g.name = 'Vacaciones' AND u.email = 'borja@example.com';
 
 -- Expense shares
 INSERT INTO expense_shares (expense_id, user_id, amount_owed)

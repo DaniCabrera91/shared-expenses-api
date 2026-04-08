@@ -52,4 +52,10 @@ const loginSchema = z
   })
   .strict();
 
-module.exports = { registerSchema, loginSchema };
+const refreshTokenSchema = z
+  .object({
+    refresh_token: z.string().min(20, "Refresh token requerido"),
+  })
+  .strict();
+
+module.exports = { registerSchema, loginSchema, refreshTokenSchema };
