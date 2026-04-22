@@ -144,10 +144,56 @@ const getGroupBalances = async (groupId) => {
   return result.rows;
 };
 
+const getUserExpensesSummary = async (userId) => {
+  // Gastos pagados por el usuario
+  const paid = await pool.query(
+    `
+    SELECT SUM(total_amount) as total_paid
+    FROM expenses
+    WHERE paid_by = $1
+    `,
+    [userId],
+  );
+
+  // Cantidad que debe el usuario
+  const owed = await pool.query(
+    `
+    SELECT SUM(amount_owed) as total_owed
+    FROM expense_shares
+    WHERE user_id = $1
+    `,
+    [userId],
+  );
+
+  // Grupos del usuario con gastos
+  const groupsWithExpenses = await pool.query(
+    `
+    SELECT g.id, g.name, g.emoji, COUNT(e.id) as expense_count
+    FROM groups g
+    JOIN group_members gm ON gm.group_id = g.id
+    LEFT JOIN expenses e ON e.group_id = g.id
+    WHERE gm.user_id = $1 AND g.is_archived = FALSE
+    GROUP BY g.id
+    HAVING COUNT(e.id) > 0
+    `,
+    [userId],
+  );
+
+  return {
+    total_paid: Number(paid.rows[0]?.total_paid) || 0,
+    total_owed: Number(owed.rows[0]?.total_owed) || 0,
+    balance:
+      Number(paid.rows[0]?.total_paid || 0) -
+      Number(owed.rows[0]?.total_owed || 0),
+    groups_with_expenses: groupsWithExpenses.rows,
+  };
+};
+
 module.exports = {
   createExpense,
   listGroupExpenses,
   getExpense,
   deleteExpense,
   getGroupBalances,
+  getUserExpensesSummary,
 };

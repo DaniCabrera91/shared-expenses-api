@@ -28,6 +28,9 @@ router.get("/expenses/:expenseId", controller.getExpense);
 
 router.delete("/expenses/:expenseId", controller.deleteExpense);
 
+// Resumen global del usuario
+router.get("/expenses/summary", controller.getUserSummary);
+
 router.get(
   "/groups/:groupId/balances",
   requireGroupMember,

@@ -52,10 +52,20 @@ const getGroupBalances = async (req, res, next) => {
   }
 };
 
+const getUserSummary = async (req, res, next) => {
+  try {
+    const summary = await expensesService.getUserExpensesSummary(req.user.id);
+    res.json(summary);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createExpense,
   listGroupExpenses,
   getExpense,
   deleteExpense,
   getGroupBalances,
+  getUserSummary,
 };
