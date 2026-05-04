@@ -5,6 +5,7 @@ const authRoutes = require("./auth/auth.routes");
 const usersRoutes = require("./users/users.routes");
 const groupsRoutes = require("./groups/groups.routes");
 const expensesRoutes = require("./expenses/expenses.routes");
+const invitationsRoutes = require("./invitations/invitations.routes");
 
 const errorHandler = require("./middlewares/error.middleware");
 
@@ -25,6 +26,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/groups", groupsRoutes);
 app.use("/api/expenses", expensesRoutes);
+app.use("/api", invitationsRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
