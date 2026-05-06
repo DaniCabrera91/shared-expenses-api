@@ -51,6 +51,70 @@ const createExpense = async (groupId, data, userId) => {
   }
 };
 
+const updateExpense = async (expenseId, data) => {
+  const client = await pool.connect();
+
+  try {
+    const { description, total_amount, currency, paid_by, shares } = data;
+
+    const totalShares = shares.reduce(
+      (sum, share) => sum + share.amount_owed,
+      0,
+    );
+
+    if (Number(totalShares) !== Number(total_amount)) {
+      const error = new Error("La suma de las deudas no coincide con el total");
+      error.status = 400;
+      throw error;
+    }
+
+    await client.query("BEGIN");
+
+    const expenseResult = await client.query(
+      `
+      UPDATE expenses
+      SET description = $1, total_amount = $2, currency = $3, paid_by = $4, updated_at = NOW()
+      WHERE id = $5
+      RETURNING *
+      `,
+      [description, total_amount, currency, paid_by, expenseId],
+    );
+
+    if (expenseResult.rowCount === 0) {
+      const error = new Error("Expense not found");
+      error.status = 404;
+      throw error;
+    }
+
+    await client.query(
+      `
+      DELETE FROM expense_shares
+      WHERE expense_id = $1
+      `,
+      [expenseId],
+    );
+
+    for (const share of shares) {
+      await client.query(
+        `
+        INSERT INTO expense_shares (expense_id, user_id, amount_owed)
+        VALUES ($1, $2, $3)
+        `,
+        [expenseId, share.user_id, share.amount_owed],
+      );
+    }
+
+    await client.query("COMMIT");
+
+    return expenseResult.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 const listGroupExpenses = async (groupId) => {
   const result = await pool.query(
     `
@@ -191,6 +255,7 @@ const getUserExpensesSummary = async (userId) => {
 
 module.exports = {
   createExpense,
+  updateExpense,
   listGroupExpenses,
   getExpense,
   deleteExpense,

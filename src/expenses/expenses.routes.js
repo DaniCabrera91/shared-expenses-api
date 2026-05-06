@@ -4,8 +4,12 @@ const controller = require("./expenses.controller");
 const validate = require("../middlewares/validate.middleware");
 const authenticate = require("../middlewares/auth.middleware");
 const requireGroupMember = require("../middlewares/requireGroupMember.middleware");
+const requireExpenseGroupMember = require("../middlewares/requireExpenseGroupMember.middleware");
 
-const { createExpenseSchema } = require("./expenses.validation");
+const {
+  createExpenseSchema,
+  updateExpenseSchema,
+} = require("./expenses.validation");
 
 const router = express.Router();
 
@@ -18,6 +22,13 @@ router.post(
   requireGroupMember,
   validate(createExpenseSchema),
   controller.createExpense,
+);
+
+router.put(
+  "/:expenseId",
+  requireExpenseGroupMember,
+  validate(updateExpenseSchema),
+  controller.updateExpense,
 );
 
 router.get(
@@ -33,6 +44,10 @@ router.get(
 );
 
 router.get("/:expenseId", controller.getExpense);
-router.delete("/:expenseId", controller.deleteExpense);
+router.delete(
+  "/:expenseId",
+  requireExpenseGroupMember,
+  controller.deleteExpense,
+);
 
 module.exports = router;

@@ -43,6 +43,19 @@ const deleteExpense = async (req, res, next) => {
   }
 };
 
+const updateExpense = async (req, res, next) => {
+  try {
+    const expense = await expensesService.updateExpense(
+      req.params.expenseId,
+      req.validatedData,
+    );
+
+    res.json(expense);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getGroupBalances = async (req, res, next) => {
   try {
     const balances = await expensesService.getGroupBalances(req.params.groupId);
@@ -65,6 +78,7 @@ module.exports = {
   createExpense,
   listGroupExpenses,
   getExpense,
+  updateExpense,
   deleteExpense,
   getGroupBalances,
   getUserSummary,

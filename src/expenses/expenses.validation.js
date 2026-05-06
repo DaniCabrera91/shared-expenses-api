@@ -13,6 +13,9 @@ const createExpenseSchema = z.object({
   shares: z.array(shareSchema).min(1),
 });
 
+const updateExpenseSchema = createExpenseSchema;
+
 module.exports = {
   createExpenseSchema,
+  updateExpenseSchema,
 };
