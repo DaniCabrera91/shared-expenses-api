@@ -4,7 +4,7 @@ const controller = require("./expenses.controller");
 const validate = require("../middlewares/validate.middleware");
 const authenticate = require("../middlewares/auth.middleware");
 const requireGroupMember = require("../middlewares/requireGroupMember.middleware");
-const requireExpenseGroupMember = require("../middlewares/requireExpenseGroupMember.middleware");
+const requireExpenseAuthorOrAdmin = require("../middlewares/requireExpenseAuthorOrAdmin.middleware");
 
 const {
   createExpenseSchema,
@@ -26,7 +26,7 @@ router.post(
 
 router.put(
   "/:expenseId",
-  requireExpenseGroupMember,
+  requireExpenseAuthorOrAdmin,
   validate(updateExpenseSchema),
   controller.updateExpense,
 );
@@ -46,7 +46,7 @@ router.get(
 router.get("/:expenseId", controller.getExpense);
 router.delete(
   "/:expenseId",
-  requireExpenseGroupMember,
+  requireExpenseAuthorOrAdmin,
   controller.deleteExpense,
 );
 
