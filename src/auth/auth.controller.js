@@ -34,10 +34,20 @@ const login = async (req, res, next) => {
 
     const refreshToken = await createRefreshToken(user.id);
 
-    res.json({
-      token,
-      refresh_token: refreshToken,
+    const refreshExpiresDays = Number(
+      process.env.REFRESH_TOKEN_EXPIRES_DAYS || 30,
+    );
+
+    const isProd = process.env.NODE_ENV === "production";
+
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+      maxAge: refreshExpiresDays * 24 * 60 * 60 * 1000,
     });
+
+    res.json({ token });
   } catch (error) {
     next(error);
   }
@@ -45,13 +55,28 @@ const login = async (req, res, next) => {
 
 const refresh = async (req, res, next) => {
   try {
-    const { refresh_token } = req.validatedData;
+    const refresh_token = req.cookies?.refresh_token;
+
+    if (!refresh_token) {
+      throw new Error("Refresh token requerido");
+    }
+
     const { token, refreshToken } = await refreshAccessToken(refresh_token);
 
-    res.json({
-      token,
-      refresh_token: refreshToken,
+    const refreshExpiresDays = Number(
+      process.env.REFRESH_TOKEN_EXPIRES_DAYS || 30,
+    );
+
+    const isProd = process.env.NODE_ENV === "production";
+
+    res.cookie("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? "none" : "lax",
+      maxAge: refreshExpiresDays * 24 * 60 * 60 * 1000,
     });
+
+    res.json({ token });
   } catch (error) {
     next(error);
   }
@@ -59,7 +84,18 @@ const refresh = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
   try {
-    await revokeRefreshToken(req.validatedData.refresh_token);
+    const refresh_token = req.cookies?.refresh_token;
+
+    if (refresh_token) {
+      await revokeRefreshToken(refresh_token);
+      const isProd = process.env.NODE_ENV === "production";
+      res.clearCookie("refresh_token", {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? "none" : "lax",
+      });
+    }
+
     res.status(204).send();
   } catch (error) {
     next(error);
