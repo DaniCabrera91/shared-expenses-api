@@ -102,4 +102,20 @@ const logout = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, refresh, logout };
+const changePassword = async (req, res, next) => {
+  try {
+    const { current_password, new_password } = req.validatedData;
+
+    const result = await require("./auth.service").changePassword(
+      req.user.id,
+      current_password,
+      new_password,
+    );
+
+    res.json({ message: "Contraseña actualizada correctamente" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { register, login, refresh, logout, changePassword };

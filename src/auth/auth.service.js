@@ -132,10 +132,39 @@ const refreshAccessToken = async (refreshToken) => {
   return { token, refreshToken: newRefreshToken };
 };
 
+const changePassword = async (userId, currentPassword, newPassword) => {
+  const result = await pool.query(
+    `SELECT password_hash FROM users WHERE id = $1`,
+    [userId],
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  const { password_hash } = result.rows[0];
+
+  const isValid = await bcrypt.compare(currentPassword, password_hash);
+
+  if (!isValid) {
+    throw new Error("Contraseña actual incorrecta");
+  }
+
+  const newHash = await hashPassword(newPassword);
+
+  await pool.query(
+    `UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2`,
+    [newHash, userId],
+  );
+
+  return { success: true };
+};
+
 module.exports = {
   registerUser,
   loginUser,
   createRefreshToken,
   refreshAccessToken,
   revokeRefreshToken,
+  changePassword,
 };

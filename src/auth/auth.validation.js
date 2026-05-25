@@ -58,4 +58,21 @@ const refreshTokenSchema = z
   })
   .strict();
 
-module.exports = { registerSchema, loginSchema, refreshTokenSchema };
+const changePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, "Contraseña actual requerida"),
+    new_password: z
+      .string()
+      .min(12, "Mínimo 12 caracteres")
+      .refine((val) => /[A-Z]/.test(val), "Debe incluir mayúscula")
+      .refine((val) => /[a-z]/.test(val), "Debe incluir minúscula")
+      .refine((val) => /[0-9]/.test(val), "Debe incluir número"),
+  })
+  .strict();
+
+module.exports = {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  changePasswordSchema,
+};
