@@ -48,6 +48,7 @@ const updateExpense = async (req, res, next) => {
     const expense = await expensesService.updateExpense(
       req.params.expenseId,
       req.validatedData,
+      req.user.id,
     );
 
     res.json(expense);

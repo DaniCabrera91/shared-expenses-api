@@ -1,4 +1,7 @@
 const pool = require("../config/db");
+const {
+  createNotification,
+} = require("../notifications/notifications.service");
 
 const createExpense = async (groupId, data, userId) => {
   const client = await pool.connect();
@@ -40,6 +43,16 @@ const createExpense = async (groupId, data, userId) => {
       );
     }
 
+    await createNotification(
+      {
+        groupId,
+        actorId: userId,
+        type: "expense_created",
+        message: `Nuevo gasto: "${description}"`,
+      },
+      client,
+    );
+
     await client.query("COMMIT");
 
     return expense;
@@ -51,7 +64,7 @@ const createExpense = async (groupId, data, userId) => {
   }
 };
 
-const updateExpense = async (expenseId, data) => {
+const updateExpense = async (expenseId, data, userId) => {
   const client = await pool.connect();
 
   try {
@@ -103,6 +116,16 @@ const updateExpense = async (expenseId, data) => {
         [expenseId, share.user_id, share.amount_owed],
       );
     }
+
+    await createNotification(
+      {
+        groupId: expenseResult.rows[0].group_id,
+        actorId: userId,
+        type: "expense_updated",
+        message: `Gasto actualizado: "${description}"`,
+      },
+      client,
+    );
 
     await client.query("COMMIT");
 

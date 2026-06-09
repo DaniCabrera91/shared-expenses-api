@@ -35,7 +35,10 @@ const getGroup = async (req, res, next) => {
 
 const archiveGroup = async (req, res, next) => {
   try {
-    const group = await groupsService.archiveGroup(req.params.groupId);
+    const group = await groupsService.archiveGroup(
+      req.params.groupId,
+      req.user.id,
+    );
     res.json(group);
   } catch (error) {
     next(error);
@@ -44,7 +47,10 @@ const archiveGroup = async (req, res, next) => {
 
 const unarchiveGroup = async (req, res, next) => {
   try {
-    const group = await groupsService.unarchiveGroup(req.params.groupId);
+    const group = await groupsService.unarchiveGroup(
+      req.params.groupId,
+      req.user.id,
+    );
     res.json(group);
   } catch (error) {
     next(error);
@@ -79,6 +85,7 @@ const updateMemberRole = async (req, res, next) => {
       req.params.groupId,
       req.params.userId,
       req.validatedData.role,
+      req.user.id,
     );
 
     res.json(member);
@@ -92,6 +99,7 @@ const removeMember = async (req, res, next) => {
     const result = await groupsService.removeMember(
       req.params.groupId,
       req.params.userId,
+      req.user.id,
     );
 
     res.json(result);

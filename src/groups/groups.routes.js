@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("./groups.controller");
+const notificationsController = require("../notifications/notifications.controller");
 const validate = require("../middlewares/validate.middleware");
 const authenticate = require("../middlewares/auth.middleware");
 const requireGroupAdmin = require("../middlewares/requireGroupAdmin.middleware");
@@ -20,6 +21,11 @@ router.post("/", validate(createGroupSchema), controller.createGroup);
 router.get("/", controller.listGroups);
 
 router.get("/:groupId", requireGroupMember, controller.getGroup);
+router.get(
+  "/:groupId/notifications",
+  requireGroupMember,
+  notificationsController.listGroupNotifications,
+);
 
 router.patch("/:groupId/archive", requireGroupAdmin, controller.archiveGroup);
 router.patch(

@@ -1,5 +1,8 @@
 const crypto = require("crypto");
 const pool = require("../config/db");
+const {
+  createNotification,
+} = require("../notifications/notifications.service");
 
 const generateToken = () => {
   return crypto.randomBytes(32).toString("hex");
@@ -24,16 +27,41 @@ const createInvitation = async (groupId, userId, expiresInDays = 7) => {
   const token = generateToken();
   const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
 
-  const result = await pool.query(
-    `
-    INSERT INTO group_invitations (group_id, token, created_by, expires_at)
-    VALUES ($1, $2, $3, $4)
-    RETURNING *
-    `,
-    [groupId, token, userId, expiresAt],
-  );
+  const client = await pool.connect();
 
-  return result.rows[0];
+  try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+      `
+      INSERT INTO group_invitations (group_id, token, created_by, expires_at)
+      VALUES ($1, $2, $3, $4)
+      RETURNING *
+      `,
+      [groupId, token, userId, expiresAt],
+    );
+
+    const invitation = result.rows[0];
+
+    await createNotification(
+      {
+        groupId,
+        actorId: userId,
+        type: "invitation_sent",
+        message: "Se ha creado una nueva invitación para unirse al grupo",
+      },
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return invitation;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 const validateInvitation = async (token) => {
@@ -95,6 +123,28 @@ const joinGroupWithInvitation = async (token, userId) => {
       VALUES ($1, $2, 'member')
       `,
       [invitation.group_id, userId],
+    );
+
+    const userResult = await client.query(
+      `
+      SELECT first_name, last_name
+      FROM users
+      WHERE id = $1
+      `,
+      [userId],
+    );
+
+    const user = userResult.rows[0];
+    const name = `${user.first_name} ${user.last_name}`.trim();
+
+    await createNotification(
+      {
+        groupId: invitation.group_id,
+        actorId: userId,
+        type: "member_joined",
+        message: `${name} se ha unido al grupo`,
+      },
+      client,
     );
 
     // Incrementar contador de joins
