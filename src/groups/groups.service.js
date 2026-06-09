@@ -37,17 +37,17 @@ const createGroup = async ({ name, emoji, currency }, userId) => {
   }
 };
 
-const listUserGroups = async (userId) => {
+const listUserGroups = async (userId, archived = false) => {
   const result = await pool.query(
     `
     SELECT g.id, g.name, g.emoji, g.currency, g.created_at
     FROM groups g
     JOIN group_members gm ON gm.group_id = g.id
     WHERE gm.user_id = $1
-    AND g.is_archived = FALSE
+    AND g.is_archived = $2
     ORDER BY g.created_at DESC
     `,
-    [userId],
+    [userId, archived],
   );
 
   return result.rows;
@@ -71,6 +71,20 @@ const archiveGroup = async (groupId) => {
     `
     UPDATE groups
     SET is_archived = TRUE
+    WHERE id = $1
+    RETURNING *
+    `,
+    [groupId],
+  );
+
+  return result.rows[0];
+};
+
+const unarchiveGroup = async (groupId) => {
+  const result = await pool.query(
+    `
+    UPDATE groups
+    SET is_archived = FALSE
     WHERE id = $1
     RETURNING *
     `,
@@ -173,6 +187,7 @@ module.exports = {
   listUserGroups,
   getGroup,
   archiveGroup,
+  unarchiveGroup,
   addParticipants,
   listMembers,
   updateMemberRole,

@@ -22,6 +22,11 @@ router.get("/", controller.listGroups);
 router.get("/:groupId", requireGroupMember, controller.getGroup);
 
 router.patch("/:groupId/archive", requireGroupAdmin, controller.archiveGroup);
+router.patch(
+  "/:groupId/unarchive",
+  requireGroupAdmin,
+  controller.unarchiveGroup,
+);
 
 router.post(
   "/:groupId/members",

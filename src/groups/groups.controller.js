@@ -15,7 +15,8 @@ const createGroup = async (req, res, next) => {
 
 const listGroups = async (req, res, next) => {
   try {
-    const groups = await groupsService.listUserGroups(req.user.id);
+    const archived = req.query.archived === "true";
+    const groups = await groupsService.listUserGroups(req.user.id, archived);
     res.json(groups);
   } catch (error) {
     next(error);
@@ -35,6 +36,15 @@ const getGroup = async (req, res, next) => {
 const archiveGroup = async (req, res, next) => {
   try {
     const group = await groupsService.archiveGroup(req.params.groupId);
+    res.json(group);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const unarchiveGroup = async (req, res, next) => {
+  try {
+    const group = await groupsService.unarchiveGroup(req.params.groupId);
     res.json(group);
   } catch (error) {
     next(error);
@@ -108,6 +118,7 @@ module.exports = {
   listGroups,
   getGroup,
   archiveGroup,
+  unarchiveGroup,
   addParticipants,
   listMembers,
   updateMemberRole,
