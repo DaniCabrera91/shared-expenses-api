@@ -26,7 +26,11 @@ const ensureNotLastAdmin = async (groupId, userId) => {
   );
 
   if (Number(result.rows[0].count) <= 1) {
-    throw new Error("No puedes eliminar al último admin del grupo");
+    const error = new Error(
+      "No puedes demotar o eliminar al último administrador del grupo",
+    );
+    error.status = 400;
+    throw error;
   }
 };
 

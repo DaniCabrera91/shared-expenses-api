@@ -3,6 +3,9 @@ const {
   listUserGroups,
   addParticipants,
   listMembers,
+  updateMemberRole,
+  removeMember,
+  leaveGroup,
 } = require("../../src/groups/groups.service");
 const { registerUser } = require("../../src/auth/auth.service");
 const { setupTestDb } = require("../helpers/testDb");
@@ -49,5 +52,35 @@ describe("groups.service", () => {
 
     const groups = await listUserGroups(testUser.id);
     expect(groups).toHaveLength(2);
+  });
+
+  test("no permite demotar al último admin", async () => {
+    const group = await createGroup({ name: "Test Group" }, testUser.id);
+
+    await expect(
+      updateMemberRole(group.id, testUser.id, "member", testUser.id),
+    ).rejects.toThrow(
+      "No puedes demotar o eliminar al último administrador del grupo",
+    );
+  });
+
+  test("no permite eliminar al último admin", async () => {
+    const group = await createGroup({ name: "Test Group" }, testUser.id);
+
+    await expect(
+      removeMember(group.id, testUser.id, testUser.id),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: "No puedes demotar o eliminar al último administrador del grupo",
+    });
+  });
+
+  test("no permite al último admin abandonar el grupo", async () => {
+    const group = await createGroup({ name: "Test Group" }, testUser.id);
+
+    await expect(leaveGroup(group.id, testUser.id)).rejects.toMatchObject({
+      status: 400,
+      message: "No puedes demotar o eliminar al último administrador del grupo",
+    });
   });
 });
