@@ -66,6 +66,17 @@ const getGroupBalances = async (req, res, next) => {
   }
 };
 
+const getGroupSettlements = async (req, res, next) => {
+  try {
+    const settlements = await expensesService.getGroupSettlements(
+      req.params.groupId,
+    );
+    res.json(settlements);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getUserSummary = async (req, res, next) => {
   try {
     const summary = await expensesService.getUserExpensesSummary(req.user.id);
@@ -82,5 +93,6 @@ module.exports = {
   updateExpense,
   deleteExpense,
   getGroupBalances,
+  getGroupSettlements,
   getUserSummary,
 };

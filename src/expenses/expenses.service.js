@@ -231,6 +231,83 @@ const getGroupBalances = async (groupId) => {
   return result.rows;
 };
 
+const getGroupSettlements = async (groupId) => {
+  const result = await pool.query(
+    `
+    SELECT
+      u.id,
+      u.first_name,
+      u.last_name,
+      COALESCE(paid.total_paid,0) - COALESCE(owed.total_owed,0) AS balance
+    FROM users u
+    JOIN group_members gm ON gm.user_id = u.id
+    LEFT JOIN (
+      SELECT paid_by, SUM(total_amount) total_paid
+      FROM expenses
+      WHERE group_id = $1
+      GROUP BY paid_by
+    ) paid ON paid.paid_by = u.id
+    LEFT JOIN (
+      SELECT es.user_id, SUM(es.amount_owed) total_owed
+      FROM expense_shares es
+      JOIN expenses e ON e.id = es.expense_id
+      WHERE e.group_id = $1
+      GROUP BY es.user_id
+    ) owed ON owed.user_id = u.id
+    WHERE gm.group_id = $1
+    `,
+    [groupId],
+  );
+
+  const eps = 0.01; // rounding epsilon
+  const people = result.rows.map((r) => ({
+    id: r.id,
+    name: `${r.first_name} ${r.last_name}`.trim(),
+    balance: Number(Number(r.balance).toFixed(2)),
+  }));
+
+  const creditors = people
+    .filter((p) => p.balance > eps)
+    .sort((a, b) => b.balance - a.balance);
+  const debtors = people
+    .filter((p) => p.balance < -eps)
+    .sort((a, b) => a.balance - b.balance);
+
+  const settlements = [];
+
+  let i = 0;
+  let j = 0;
+
+  while (i < debtors.length && j < creditors.length) {
+    const debtor = { ...debtors[i] };
+    const creditor = { ...creditors[j] };
+
+    const amount = Math.min(creditor.balance, Math.abs(debtor.balance));
+    const roundedAmount = Number(amount.toFixed(2));
+
+    if (roundedAmount > 0) {
+      settlements.push({
+        from_user_id: debtor.id,
+        from_name: debtor.name,
+        to_user_id: creditor.id,
+        to_name: creditor.name,
+        amount: roundedAmount,
+      });
+
+      // update in arrays
+      debtors[i].balance += roundedAmount; // less negative
+      creditors[j].balance -= roundedAmount;
+
+      if (Math.abs(debtors[i].balance) <= eps) i += 1;
+      if (creditors[j].balance <= eps) j += 1;
+    } else {
+      break;
+    }
+  }
+
+  return settlements;
+};
+
 const getUserExpensesSummary = async (userId) => {
   // Gastos pagados por el usuario
   const paid = await pool.query(
@@ -283,5 +360,6 @@ module.exports = {
   getExpense,
   deleteExpense,
   getGroupBalances,
+  getGroupSettlements,
   getUserExpensesSummary,
 };

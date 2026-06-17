@@ -43,6 +43,12 @@ router.get(
   controller.getGroupBalances,
 );
 
+router.get(
+  "/groups/:groupId/settlements",
+  requireGroupMember,
+  controller.getGroupSettlements,
+);
+
 router.get("/:expenseId", controller.getExpense);
 router.delete(
   "/:expenseId",
