@@ -308,6 +308,81 @@ const getGroupSettlements = async (groupId) => {
   return settlements;
 };
 
+const createSettlement = async (
+  groupId,
+  { from_user_id, to_user_id, amount },
+  actorId,
+) => {
+  if (!from_user_id || !to_user_id || !amount || Number(amount) <= 0) {
+    const error = new Error("Datos de settlement inválidos");
+    error.status = 400;
+    throw error;
+  }
+
+  // Verify both users are members of group
+  const members = await pool.query(
+    `
+    SELECT user_id FROM group_members
+    WHERE group_id = $1 AND user_id = ANY($2::uuid[])
+    `,
+    [groupId, [from_user_id, to_user_id]],
+  );
+
+  if (members.rowCount < 2) {
+    const error = new Error("Ambos usuarios deben pertenecer al grupo");
+    error.status = 400;
+    throw error;
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const insert = await client.query(
+      `
+      INSERT INTO settlements (group_id, from_user_id, to_user_id, amount, created_by)
+      VALUES ($1,$2,$3,$4,$5)
+      RETURNING *
+      `,
+      [groupId, from_user_id, to_user_id, amount, actorId],
+    );
+
+    const settlement = insert.rows[0];
+
+    // Get user names for notification
+    const ures = await client.query(
+      `
+      SELECT id, first_name, last_name FROM users WHERE id = ANY($1::uuid[])
+      `,
+      [[from_user_id, to_user_id]],
+    );
+
+    const uMap = {};
+    for (const u of ures.rows)
+      uMap[u.id] = `${u.first_name} ${u.last_name}`.trim();
+
+    await createNotification(
+      {
+        groupId,
+        actorId,
+        type: "settlement_created",
+        message: `${uMap[from_user_id] || from_user_id} pagó ${amount} a ${uMap[to_user_id] || to_user_id}`,
+      },
+      client,
+    );
+
+    await client.query("COMMIT");
+
+    return settlement;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 const getUserExpensesSummary = async (userId) => {
   // Gastos pagados por el usuario
   const paid = await pool.query(
@@ -361,5 +436,6 @@ module.exports = {
   deleteExpense,
   getGroupBalances,
   getGroupSettlements,
+  createSettlement,
   getUserExpensesSummary,
 };

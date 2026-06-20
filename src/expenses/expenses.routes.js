@@ -49,6 +49,12 @@ router.get(
   controller.getGroupSettlements,
 );
 
+router.post(
+  "/groups/:groupId/settlements",
+  requireGroupMember,
+  controller.createSettlement,
+);
+
 router.get("/:expenseId", controller.getExpense);
 router.delete(
   "/:expenseId",

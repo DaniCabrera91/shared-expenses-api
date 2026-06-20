@@ -77,6 +77,21 @@ const getGroupSettlements = async (req, res, next) => {
   }
 };
 
+const createSettlement = async (req, res, next) => {
+  try {
+    const payload = req.validatedData || req.body;
+    const settlement = await expensesService.createSettlement(
+      req.params.groupId,
+      payload,
+      req.user.id,
+    );
+
+    res.status(201).json(settlement);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getUserSummary = async (req, res, next) => {
   try {
     const summary = await expensesService.getUserExpensesSummary(req.user.id);
@@ -94,5 +109,6 @@ module.exports = {
   deleteExpense,
   getGroupBalances,
   getGroupSettlements,
+  createSettlement,
   getUserSummary,
 };
