@@ -7,7 +7,14 @@ const createExpense = async (groupId, data, userId) => {
   const client = await pool.connect();
 
   try {
-    const { description, total_amount, currency, paid_by, shares, category = "other" } = data;
+    const {
+      description,
+      total_amount,
+      currency,
+      paid_by,
+      shares,
+      category = "other",
+    } = data;
 
     const totalShares = shares.reduce(
       (sum, share) => sum + share.amount_owed,
@@ -68,7 +75,14 @@ const updateExpense = async (expenseId, data, userId) => {
   const client = await pool.connect();
 
   try {
-    const { description, total_amount, currency, paid_by, shares, category = "other" } = data;
+    const {
+      description,
+      total_amount,
+      currency,
+      paid_by,
+      shares,
+      category = "other",
+    } = data;
 
     const totalShares = shares.reduce(
       (sum, share) => sum + share.amount_owed,
