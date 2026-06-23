@@ -11,6 +11,7 @@ const createExpenseSchema = z.object({
   currency: z.string().length(3),
   paid_by: z.string().uuid(),
   shares: z.array(shareSchema).min(1),
+  category: z.string().default("other"),
 });
 
 const updateExpenseSchema = createExpenseSchema;

@@ -7,7 +7,7 @@ const createExpense = async (groupId, data, userId) => {
   const client = await pool.connect();
 
   try {
-    const { description, total_amount, currency, paid_by, shares } = data;
+    const { description, total_amount, currency, paid_by, shares, category = "other" } = data;
 
     const totalShares = shares.reduce(
       (sum, share) => sum + share.amount_owed,
@@ -24,11 +24,11 @@ const createExpense = async (groupId, data, userId) => {
 
     const expenseResult = await client.query(
       `
-      INSERT INTO expenses (group_id, paid_by, created_by, description, total_amount, currency)
-      VALUES ($1,$2,$3,$4,$5,$6)
+      INSERT INTO expenses (group_id, paid_by, created_by, description, total_amount, currency, category)
+      VALUES ($1,$2,$3,$4,$5,$6,$7)
       RETURNING *
       `,
-      [groupId, paid_by, userId, description, total_amount, currency],
+      [groupId, paid_by, userId, description, total_amount, currency, category],
     );
 
     const expense = expenseResult.rows[0];
@@ -68,7 +68,7 @@ const updateExpense = async (expenseId, data, userId) => {
   const client = await pool.connect();
 
   try {
-    const { description, total_amount, currency, paid_by, shares } = data;
+    const { description, total_amount, currency, paid_by, shares, category = "other" } = data;
 
     const totalShares = shares.reduce(
       (sum, share) => sum + share.amount_owed,
@@ -86,11 +86,11 @@ const updateExpense = async (expenseId, data, userId) => {
     const expenseResult = await client.query(
       `
       UPDATE expenses
-      SET description = $1, total_amount = $2, currency = $3, paid_by = $4, updated_at = NOW()
-      WHERE id = $5
+      SET description = $1, total_amount = $2, currency = $3, paid_by = $4, category = $5, updated_at = NOW()
+      WHERE id = $6
       RETURNING *
       `,
-      [description, total_amount, currency, paid_by, expenseId],
+      [description, total_amount, currency, paid_by, category, expenseId],
     );
 
     if (expenseResult.rowCount === 0) {
