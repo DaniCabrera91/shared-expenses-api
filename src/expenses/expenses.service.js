@@ -221,10 +221,7 @@ const getGroupBalances = async (groupId) => {
     `
     SELECT
       u.id,
-      COALESCE(paid.total_paid,0) 
-      - COALESCE(owed.total_owed,0)
-      + COALESCE(settled_received.total_received,0)
-      - COALESCE(settled_paid.total_paid,0) AS balance
+      COALESCE(paid.total_paid,0) - COALESCE(owed.total_owed,0) AS balance
     FROM users u
     JOIN group_members gm ON gm.user_id = u.id
     LEFT JOIN (
@@ -240,21 +237,9 @@ const getGroupBalances = async (groupId) => {
       WHERE e.group_id = $1
       GROUP BY es.user_id
     ) owed ON owed.user_id = u.id
-    LEFT JOIN (
-      SELECT to_user_id, SUM(amount) total_received
-      FROM settlements
-      WHERE group_id = $1
-      GROUP BY to_user_id
-    ) settled_received ON settled_received.to_user_id = u.id
-    LEFT JOIN (
-      SELECT from_user_id, SUM(amount) total_paid
-      FROM settlements
-      WHERE group_id = $1
-      GROUP BY from_user_id
-    ) settled_paid ON settled_paid.from_user_id = u.id
     WHERE gm.group_id = $1
     `,
-    [groupId, groupId, groupId, groupId, groupId],
+    [groupId],
   );
 
   return result.rows;
@@ -267,10 +252,7 @@ const getGroupSettlements = async (groupId) => {
       u.id,
       u.first_name,
       u.last_name,
-      COALESCE(paid.total_paid,0) 
-      - COALESCE(owed.total_owed,0)
-      + COALESCE(settled_received.total_received,0)
-      - COALESCE(settled_paid.total_paid,0) AS balance
+      COALESCE(paid.total_paid,0) - COALESCE(owed.total_owed,0) AS balance
     FROM users u
     JOIN group_members gm ON gm.user_id = u.id
     LEFT JOIN (
@@ -286,21 +268,9 @@ const getGroupSettlements = async (groupId) => {
       WHERE e.group_id = $1
       GROUP BY es.user_id
     ) owed ON owed.user_id = u.id
-    LEFT JOIN (
-      SELECT to_user_id, SUM(amount) total_received
-      FROM settlements
-      WHERE group_id = $1
-      GROUP BY to_user_id
-    ) settled_received ON settled_received.to_user_id = u.id
-    LEFT JOIN (
-      SELECT from_user_id, SUM(amount) total_paid
-      FROM settlements
-      WHERE group_id = $1
-      GROUP BY from_user_id
-    ) settled_paid ON settled_paid.from_user_id = u.id
     WHERE gm.group_id = $1
     `,
-    [groupId, groupId, groupId, groupId, groupId],
+    [groupId],
   );
 
   const eps = 0.01; // rounding epsilon
